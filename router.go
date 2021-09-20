@@ -1,9 +1,5 @@
 package simplegin
 
-import (
-	"net/http"
-)
-
 type router struct {
 	trees map[string]trieTree
 }
@@ -24,15 +20,11 @@ func (r *router) register(method string, pattern string, handlers HandlersChain)
 	}
 }
 
-func (r *router) handle(ctx *Context) {
-	if root := r.trees[ctx.Method]; root != nil { // GET POST PATCH PUT DELETE Trie
-		if handlers, params := root.search(ctx.Path); handlers != nil {
-			ctx.Params = params
-			ctx.handlers = append(ctx.handlers, handlers...)
-			ctx.Next()
-			return
-		}
+func (r *router) query(method string, requestPath string) (HandlersChain, map[string]string) {
+	var handlers HandlersChain
+	var params map[string]string
+	if root := r.trees[method]; root != nil {
+		handlers, params = root.search(requestPath)
 	}
-
-	ctx.String(http.StatusNotFound, "404 NOT FOUND: %s\n for %s.", ctx.Path, ctx.Method)
+	return handlers, params
 }
