@@ -18,7 +18,7 @@ func Logger() HandlerFunc {
 			path += "?" + query
 		}
 		method := ctx.Method
-		statusCode := ctx.StatusCode
+		statusCode := ctx.Writer.StatusCode
 		end := time.Now()
 		latency := end.Sub(start)
 		clientIP := ctx.Req.RemoteAddr

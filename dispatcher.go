@@ -64,6 +64,26 @@ func (d *Dispatcher) POST(relativePath string, handler HandlerFunc) {
 	d.register("POST", relativePath, handler)
 }
 
+func (d *Dispatcher) Static(relativePath string, root string)  {
+	// create handlerFunc
+	var fs http.FileSystem = http.Dir(root)
+	handler := d.createStaticHandler(relativePath, fs)
+
+	// create *wildcard pattern
+	pattern := path.Join(relativePath, "/*filepath")
+	d.GET(pattern, handler)
+}
+
+func (d *Dispatcher) createStaticHandler(relativePath string, fs http.FileSystem) HandlerFunc {
+	absolutePath := d.calculateAbsolutePath(relativePath)
+	fileHandler := http.FileServer(fs)
+	fileHandler = http.StripPrefix(absolutePath, fileHandler)
+	
+	return func(ctx *Context) {
+		fileHandler.ServeHTTP(ctx.Writer, ctx.Req)
+	}
+}
+
 func (d *Dispatcher) register(method string, relativePath string, handler HandlerFunc) {
 	d.router.register(method, d.calculateAbsolutePath(relativePath), append(d.middlewares, handler))
 }
