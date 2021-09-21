@@ -64,7 +64,7 @@ func (d *Dispatcher) POST(relativePath string, handler HandlerFunc) {
 	d.register("POST", relativePath, handler)
 }
 
-func (d *Dispatcher) Static(relativePath string, root string)  {
+func (d *Dispatcher) Static(relativePath string, root string) {
 	// create handlerFunc
 	var fs http.FileSystem = http.Dir(root)
 	handler := d.createStaticHandler(relativePath, fs)
@@ -78,7 +78,7 @@ func (d *Dispatcher) createStaticHandler(relativePath string, fs http.FileSystem
 	absolutePath := d.calculateAbsolutePath(relativePath)
 	fileHandler := http.FileServer(fs)
 	fileHandler = http.StripPrefix(absolutePath, fileHandler)
-	
+
 	return func(ctx *Context) {
 		fileHandler.ServeHTTP(ctx.Writer, ctx.Req)
 	}

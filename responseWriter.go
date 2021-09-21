@@ -5,7 +5,7 @@ import "net/http"
 type responseWriter struct {
 	http.ResponseWriter
 	StatusCode int
-	written bool
+	written    bool
 }
 
 func (w *responseWriter) WriteHeader(statusCode int) {
@@ -15,7 +15,6 @@ func (w *responseWriter) WriteHeader(statusCode int) {
 	}
 	w.ResponseWriter.WriteHeader(statusCode)
 }
-
 
 func (w *responseWriter) Write(data []byte) (int, error) {
 	if !w.written {

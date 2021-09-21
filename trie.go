@@ -132,7 +132,6 @@ func matchChildren(t *trieNode, part string) []*trieNode {
 }
 
 func checkConflict(t *trieNode, parts []string) string {
-
 	if len(parts) > 0 {
 		part := parts[0]
 
