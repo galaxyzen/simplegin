@@ -9,7 +9,7 @@
 可以匹配 /post/golang/2009、/post/cpp/1983 等
 
 /static/*path/index.js
-可以匹配 /static/index.js、/static/home/index.js、/assets/home/api/index.js 等
+可以匹配 /static/index.js、/static/home/index.js、/static/home/api/index.js 等
 
 /*path/post/:category/2009
 可以匹配 /post/golang/2009、/bookmark/private/post/java/2009 等
