@@ -52,48 +52,57 @@ func (t *trieNode) search(requestPath string) (HandlersChain, map[string]string)
 }
 
 func search(t *trieNode, parts []string) (HandlersChain, map[string]string) {
-	var params map[string]string
-	var childrenParams map[string]string
 	var handlers HandlersChain
-	var lead *trieNode
+	var params = make(map[string]string)
 
-	if len(parts) == 0 {
-		return t.handlers, params
-	}
+	if len(parts) > 0 {
+		part := parts[0]
 
-	part := parts[0]
-	if strings.HasPrefix(t.part, "*") {
-		if handlers, childrenParams = search(t, parts[1:]); handlers != nil {
-			lead = t
-		}
-	}
-
-	if handlers == nil {
-		for _, child := range matchChildren(t, part) {
-			if handlers, childrenParams = search(child, parts[1:]); handlers != nil {
-				lead = child
-				break
+		if strings.HasPrefix(t.part, "*") {
+			if handlers, params = search(t, parts[1:]); handlers != nil {
+				key := t.part[1:]
+				if v, exist := params[key]; !exist {
+					params[key] = part
+				} else {
+					params[key] = part + "/" + v
+				}
+				return handlers, params
 			}
 		}
-	}
 
-	if lead != nil { // equal to `match != nil`
-		params = make(map[string]string)
-		for k, v := range childrenParams {
-			params[k] = v
-		}
+		for _, child := range matchChildren(t, part) {
+			if strings.HasPrefix(child.part, "*") {
+				if handlers, params = search(child, parts); handlers != nil {
+					key := child.part[1:]
+					if _, exist := params[key]; !exist {
+						params[key] = ""
+					}
 
-		if strings.HasPrefix(lead.part, ":") {
-			key := lead.part[1:]
-			params[key] = part
-		}
-
-		if strings.HasPrefix(lead.part, "*") {
-			key := lead.part[1:]
-			if v, ok := childrenParams[key]; ok {
-				params[key] = part + "/" + v
+					return handlers, params
+				}
 			} else {
-				params[key] = part
+				if handlers, params = search(child, parts[1:]); handlers != nil {
+					if strings.HasPrefix(child.part, ":") {
+						key := child.part[1:]
+						params[key] = part
+					}
+
+					return handlers, params
+				}
+			}
+		}
+	} else {
+		if t.handlers != nil && t.pattern != "" {
+			return t.handlers, params
+		}
+
+		for _, child := range t.children {
+			if strings.HasPrefix(child.part, "*") {
+				if handlers, params = search(child, parts); handlers != nil {
+					key := child.part[1:]
+					params[key] = ""
+					return handlers, params
+				}
 			}
 		}
 	}
@@ -123,48 +132,59 @@ func matchChildren(t *trieNode, part string) []*trieNode {
 }
 
 func checkConflict(t *trieNode, parts []string) string {
-	if len(parts) == 0 {
-		return t.pattern
-	}
 
-	part := parts[0]
-	if strings.HasPrefix(t.part, "*") {
-		match := checkConflict(t, parts[1:])
-		if match != "" {
-			return match
-		}
-	}
+	if len(parts) > 0 {
+		part := parts[0]
 
-	for _, child := range matchChildren(t, part) {
-		match := checkConflict(child, parts[1:])
-		if match != "" {
-			return match
-		}
-	}
-
-	// case for *wildcard
-	if strings.HasPrefix(part, "*") {
-		for _, child := range t.children {
-			match := checkConflict(child, parts)
-			if match != "" {
+		if strings.HasPrefix(t.part, "*") {
+			if match := checkConflict(t, parts[1:]); match != "" {
 				return match
 			}
 		}
 
-		for _, child := range t.children {
-			match := checkConflict(child, parts[1:])
-			if match != "" {
+		for _, child := range matchChildren(t, part) {
+			if strings.HasPrefix(child.part, "*") {
+				if match := checkConflict(child, parts); match != "" {
+					return match
+				}
+			} else {
+				if match := checkConflict(child, parts[1:]); match != "" {
+					return match
+				}
+			}
+		}
+
+		// case for *wildcard
+		if strings.HasPrefix(part, "*") {
+			for _, child := range t.children {
+				if match := checkConflict(child, parts); match != "" {
+					return match
+				}
+			}
+
+			if match := checkConflict(t, parts[1:]); match != "" {
 				return match
 			}
 		}
-	}
 
-	// case for :wildcard
-	if strings.HasPrefix(part, ":") {
+		// case for :wildcard
+		if strings.HasPrefix(part, ":") {
+			for _, child := range t.children {
+				if match := checkConflict(child, parts[1:]); match != "" {
+					return match
+				}
+			}
+		}
+	} else {
+		if t.pattern != "" {
+			return t.pattern
+		}
+
 		for _, child := range t.children {
-			match := checkConflict(child, parts[1:])
-			if match != "" {
-				return match
+			if strings.HasPrefix(child.part, "*") {
+				if match := checkConflict(child, parts); match != "" {
+					return match
+				}
 			}
 		}
 	}
